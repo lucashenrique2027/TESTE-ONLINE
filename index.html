@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arte em Vidro | Vitrine</title>
+  <link rel="icon" type="image/png" href="img/logo.jpeg">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { background-color: #f4f7f6; color: #333; font-family: 'Montserrat', sans-serif; margin: 0; }
+    header { background: #fff; padding: 10px 0; border-bottom: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1000; }
+    .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    
+    .user-menu { display: flex; align-items: center; gap: 12px; position: relative; cursor: pointer; }
+    .dropdown-content {
+        display: none; position: absolute; right: 0; top: 40px; background: white;
+        min-width: 250px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); z-index: 100; border-radius: 8px; padding: 15px; border: 1px solid #eee;
+    }
+    
+    .galeria-profissional { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
+    .card-item { background: #fff; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #eee; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: relative; }
+    
+    .selo-status { position: absolute; top: 15px; left: 15px; padding: 5px 12px; font-size: 10px; font-weight: bold; border-radius: 4px; z-index: 10; color: white; text-transform: uppercase; }
+
+    .img-container img { width: 100%; height: 350px; object-fit: cover; border-radius: 8px; background: #eee; }
+
+    .compra-acoes { display: flex; align-items: center; gap: 8px; margin-top: 15px; }
+    .controle-qtd { display: flex; align-items: center; background: #fff; border-radius: 5px; border: 1px solid #bbb; overflow: hidden; }
+    .btn-qtd { background: #eee; border: none; width: 35px; height: 38px; cursor: pointer; font-weight: bold; font-size: 18px; color: #000; }
+    
+    .qtd-seletor { 
+        width: 45px; height: 38px; text-align: center; border: none; 
+        background: #fff; font-weight: bold; font-size: 16px; color: #000 !important; 
+    }
+    
+    .btn-add { flex: 1; background-color: #25D366; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    .btn-info { width: 100%; margin-top: 8px; background-color: #f8f9fa; color: #555; border: 1px solid #ddd; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; }
+
+    .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display:none; justify-content: center; align-items: center; z-index: 2000; }
+    .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; max-height: 90vh; overflow-y: auto; }
+    input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+    .btn-acao { background: #25D366; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .link-voltar { display: block; margin-top: 15px; color: #666; font-size: 13px; cursor: pointer; text-decoration: underline; }
+    
+    .status-item { font-size: 12px; padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-container">
+    <h1 style="color: #333; margin: 0; font-size: 22px;">Arte em Vidro</h1>
+    <div class="user-menu" onclick="toggleUserMenu()">
+      <span id="nome-usuario-logado" style="font-size: 13px; color: #25D366; font-weight: bold;">Entrar / Cadastro</span>
+      <img src="https://cdn-icons-png.flaticon.com/512/3177/3177440.png" width="30">
+      <div id="dropdown-menu" class="dropdown-content" onclick="event.stopPropagation()">
+        <div id="menu-deslogado">
+          <button class="btn-acao" onclick="abrirModalEscolha()">Minha Conta</button>
+        </div>
+        <div id="menu-logado" style="display:none;">
+          <p id="info-perfil" style="font-weight:bold; margin:0;"></p>
+          <div id="status-pedidos-menu" style="margin: 10px 0;"></div>
+          <button onclick="logoutUsuario()" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">Sair</button>
+        </div>
+        <hr style="margin: 10px 0; border:0; border-top: 1px solid #eee;">
+        <a href="javascript:void(0)" onclick="executarAcessoAdmin()" style="font-size: 10px; color: #ccc; text-decoration: none;">🔐 Painel Administrativo</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="vitrine" class="galeria-profissional"></div>
+
+<div id="modalEscolha" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Acesse sua Conta</h3>
+        <button class="btn-acao" onclick="abrirModalLogin()">Fazer Login</button>
+        <button class="btn-acao" style="background:#444; margin-top:10px;" onclick="abrirModalCadastro()">Novo Cadastro</button>
+        <span class="link-voltar" onclick="fecharModais()">Voltar para a loja</span>
+    </div>
+</div>
+
+<div id="modalLogin" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Login</h3>
+        <input type="text" id="login-cpf" placeholder="Seu CPF" oninput="mascaraCPF(this)">
+        <button class="btn-acao" onclick="fazerLogin()">Entrar</button>
+        <span class="link-voltar" onclick="abrirModalEscolha()">Voltar</span>
+    </div>
+</div>
+
+<div id="modalCadastro" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Criar Cadastro</h3>
+        <input type="text" id="nome-cli" placeholder="Nome Completo">
+        <input type="text" id="cpf-cli" placeholder="CPF" oninput="mascaraCPF(this)">
+        <input type="text" id="cep-cli" placeholder="CEP" oninput="mascaraCEP(this)">
+        <input type="text" id="end-cli" placeholder="Endereço (Rua, Nº, Bairro)">
+        <textarea id="obs-cli" placeholder="Observações de entrega" rows="2"></textarea>
+        <button class="btn-acao" onclick="salvarCliente()">Finalizar Cadastro</button>
+        <span class="link-voltar" onclick="abrirModalEscolha()">Voltar</span>
+    </div>
+</div>
+
+<script>
+const produtosFixos = [
+    { nome: "Vaso Girassol", img: "img/girasol WhatsApp Image 2025-08-13 at 17.14.00.jpeg" },
+    { nome: "Jogo Suqueira + 6 Copos", img: "img/6 copos suqueira Image 1 de set. de 2025, 13_30_19.png" },
+    { nome: "Pote Sustentável T", img: "img/pode T Image 8 de set. de 2025, 22_31_52.png" },
+    { nome: "Vaso Design Geométrico", img: "img/Vaso de vidro com design geométrico.png" },
+    { nome: "Taça de Cristal Premium", img: "img/taça- Image 28 de set. de 2025, 14_21_19.png" },
+    { nome: "Vaso Coloriquadra", img: "img/vaso-coloriquadra Image 1 de set. de 2025, 16_28_27.png" }
+];
+
+function carregarVitrine() {
+    const vitrine = document.getElementById('vitrine');
+    const dinamicos = JSON.parse(localStorage.getItem('jm_produtos_dinamicos') || "[]");
+    const ocultos = JSON.parse(localStorage.getItem('jm_produtos_ocultos') || "[]");
+    const estoqueManual = JSON.parse(localStorage.getItem('estoque_jm_manual') || "[]");
+
+    const todosOsProdutos = [...produtosFixos, ...dinamicos];
+    const visiveis = todosOsProdutos.filter(p => !ocultos.includes(p.nome));
+
+    const novoConteudo = visiveis.map((p, index) => {
+        const est = estoqueManual.find(e => e.nome.toLowerCase() === p.nome.toLowerCase());
+        const esgotado = est && est.status === "Esgotado";
+
+        return `
+            <div class="card-item" style="${esgotado ? 'opacity: 0.7;' : ''}">
+                <div class="selo-status" style="background: ${esgotado ? '#e74c3c' : '#25D366'}">${esgotado ? 'ESGOTADO' : 'DISPONÍVEL'}</div>
+                <div class="img-container"><img src="${p.img}" style="${esgotado ? 'filter: grayscale(1);' : ''}"></div>
+                <p><b>${p.nome}</b></p>
+                <div class="compra-acoes">
+                    <div class="controle-qtd">
+                        <button class="btn-qtd" onclick="altQtd(${index}, -1)" ${esgotado ? 'disabled' : ''}>-</button>
+                        <input type="number" id="qtd-${index}" value="1" class="qtd-seletor" readonly>
+                        <button class="btn-qtd" onclick="altQtd(${index}, 1)" ${esgotado ? 'disabled' : ''}>+</button>
+                    </div>
+                    <button class="btn-add" ${esgotado ? 'disabled style="background:#ccc;"' : ''} onclick="pedir('${p.nome}', ${index})">
+                        ${esgotado ? 'Sem Estoque' : 'Pedir'}
+                    </button>
+                </div>
+                <button class="btn-info" onclick="window.open('https://wa.me/5511972011983?text=Olá, quero detalhes sobre: ${p.nome}')">WhatsApp</button>
+            </div>
+        `;
+    }).join('');
+
+    if(vitrine.innerHTML !== novoConteudo) {
+        vitrine.innerHTML = novoConteudo;
+    }
+    verificarLogin();
+}
+
+// ATUALIZAÇÃO AUTOMÁTICA A CADA 1 SEGUNDO
+setInterval(carregarVitrine, 1000);
+
+function pedir(nome, index) {
+    const user = JSON.parse(localStorage.getItem('user_jm_logado'));
+    if(!user) return abrirModalEscolha();
+    
+    const qtd = document.getElementById(`qtd-${index}`).value;
+    let p = JSON.parse(localStorage.getItem('pedidos_jm') || "[]");
+    const idPedido = Math.floor(1000 + Math.random() * 9000);
+
+    p.push({ 
+        id: Date.now(), 
+        idUnico: idPedido,
+        cliente: user.nome, 
+        cpf: user.cpf, 
+        produto: `${qtd}x ${nome}`, 
+        statusEntrega: "Preparo",
+        fotoCliente: null 
+    });
+    
+    localStorage.setItem('pedidos_jm', JSON.stringify(p));
+    alert("Pedido #" + idPedido + " enviado com sucesso!");
+}
+
+function altQtd(idx, d) {
+    const input = document.getElementById(`qtd-${idx}`);
+    let v = parseInt(input.value) + d;
+    if(v < 1) v = 1; 
+    input.value = v;
+}
+
+function verificarLogin() {
+    const user = JSON.parse(localStorage.getItem('user_jm_logado'));
+    if(user) {
+        document.getElementById('nome-usuario-logado').innerText = "Olá, " + user.nome.split(' ')[0];
+        document.getElementById('info-perfil').innerText = user.nome;
+        document.getElementById('menu-logado').style.display = 'block';
+        document.getElementById('menu-deslogado').style.display = 'none';
+        
+        const p = JSON.parse(localStorage.getItem('pedidos_jm') || "[]").filter(x => x.cpf === user.cpf);
+        const htmlPedidos = p.length > 0 ? p.reverse().slice(0,3).map(x => `
+                <div class="status-item" style="border-left: 3px solid #25D366; padding-left: 10px; margin-bottom: 12px;">
+                    <b>${x.produto}</b><br>
+                    <small>Status: <span style="color:#25D366; font-weight:bold;">${x.statusEntrega || "Preparo"}</span></small>
+                </div>
+            `).join('') : "<p style='font-size:11px; color:#999;'>Sem pedidos.</p>";
+        
+        if(document.getElementById('status-pedidos-menu').innerHTML !== htmlPedidos) {
+            document.getElementById('status-pedidos-menu').innerHTML = htmlPedidos;
+        }
+    }
+}
+
+function toggleUserMenu() { const m = document.getElementById('dropdown-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+function abrirModalEscolha() { fecharModais(); document.getElementById('modalEscolha').style.display = 'flex'; }
+function abrirModalLogin() { fecharModais(); document.getElementById('modalLogin').style.display = 'flex'; }
+function abrirModalCadastro() { fecharModais(); document.getElementById('modalCadastro').style.display = 'flex'; }
+function fecharModais() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+function logoutUsuario() { localStorage.removeItem('user_jm_logado'); location.reload(); }
+
+function mascaraCPF(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"); }
+function mascaraCEP(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"); }
+
+function fazerLogin() {
+    const cpf = document.getElementById('login-cpf').value;
+    const u = JSON.parse(localStorage.getItem('clientes_jm') || "[]").find(c => c.cpf === cpf);
+    if(u) { localStorage.setItem('user_jm_logado', JSON.stringify(u)); location.reload(); } else alert("CPF não encontrado.");
+}
+
+function salvarCliente() {
+    const n = document.getElementById('nome-cli').value;
+    const c = document.getElementById('cpf-cli').value;
+    const end = document.getElementById('end-cli').value;
+    if(!n || !c || !end) return alert("Preencha Nome, CPF e Endereço.");
+    let l = JSON.parse(localStorage.getItem('clientes_jm') || "[]");
+    if(l.find(cliente => cliente.cpf === c)) return alert("CPF já cadastrado!");
+    const novo = { nome: n, cpf: c, cep: document.getElementById('cep-cli').value, endereco: end };
+    l.push(novo);
+    localStorage.setItem('clientes_jm', JSON.stringify(l));
+    localStorage.setItem('user_jm_logado', JSON.stringify(novo));
+    location.reload();
+}
+
+function executarAcessoAdmin() {
+    if(prompt("Senha Admin:") === "1234") { 
+        sessionStorage.setItem("logado", "true"); 
+        window.open("login_admin.html", "_blank"); 
+    }
+}
+
+window.onload = carregarVitrine;
+</script>
+</body>
+</html>
