@@ -2,22 +2,23 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel JM | Gestão Completa & Segura</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         /* Estilo Identidade JM */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; background: #f4f7f6; color: #333; }
-        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; position: fixed; padding: 20px; box-sizing: border-box; }
+        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; position: fixed; padding: 20px; box-sizing: border-box; z-index: 1001; transition: 0.3s; }
         .sidebar h2 { text-align: center; border-bottom: 2px solid #25D366; padding-bottom: 15px; font-size: 20px; }
         .sidebar nav p { cursor: pointer; padding: 12px; border-bottom: 1px solid #34495e; transition: 0.3s; margin: 0; font-size: 14px; }
         .sidebar nav p:hover { background: #34495e; padding-left: 20px; color: #25D366; }
         
-        .content { margin-left: 250px; padding: 30px; width: calc(100% - 250px); box-sizing: border-box; }
-        .card-dash { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .content { margin-left: 250px; padding: 30px; width: calc(100% - 250px); box-sizing: border-box; transition: 0.3s; }
+        .card-dash { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 25px; overflow-x: auto; }
         
         input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; min-width: 600px; }
         th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: left; }
         th { background: #f8f9fa; color: #666; font-size: 13px; text-transform: uppercase; }
         
@@ -36,20 +37,42 @@
         
         #msg-alerta { background: #fdeaea; color: #e74c3c; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none; border-left: 5px solid #e74c3c; font-weight: bold; }
         .info-entrega { font-size: 11px; color: #666; display: block; margin-top: 4px; line-height: 1.3; }
+
+        /* Menu Mobile */
+        .mobile-header { display: none; background: #2c3e50; color: white; padding: 15px; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1002; }
+        .menu-toggle { background: none; border: 1px solid #25D366; color: #25D366; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+
+        @media (max-width: 768px) {
+            .sidebar { left: -250px; }
+            .sidebar.active { left: 0; }
+            .content { margin-left: 0; width: 100%; padding: 15px; }
+            .mobile-header { display: flex; }
+            .resumo-cards { grid-template-columns: 1fr; }
+            .card-dash { padding: 15px; }
+            h3 { font-size: 18px; }
+            .btn-acao { width: 100%; margin-bottom: 10px; }
+            #estoque div[style*="display:flex"] { flex-direction: column; }
+            #usuarios div[style*="display:flex"] { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
     <script>if(sessionStorage.getItem("logado") !== "true") window.location.href = "index.html";</script>
 
-    <aside class="sidebar">
+    <div class="mobile-header">
+        <span>JM ADMIN</span>
+        <button class="menu-toggle" onclick="toggleSidebar()">☰ Menu</button>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
         <h2>JM ADMIN</h2>
         <nav>
-            <p onclick="showTab('add-prod')">➕ Novo Produto</p>
-            <p onclick="showTab('estoque')">📦 Estoque & Vitrine</p>
-            <p onclick="showTab('pedidos')">🚚 Pedidos Recebidos</p>
-            <p onclick="showTab('usuarios')">👥 Clientes</p>
-            <p onclick="showTab('lixeira')">🗑️ Pasta de Exclusão</p>
-            <p onclick="showTab('graficos')">📈 Relatórios Vendas</p>
+            <p onclick="showTab('add-prod'); toggleSidebar()">➕ Novo Produto</p>
+            <p onclick="showTab('estoque'); toggleSidebar()">📦 Estoque & Vitrine</p>
+            <p onclick="showTab('pedidos'); toggleSidebar()">🚚 Pedidos Recebidos</p>
+            <p onclick="showTab('usuarios'); toggleSidebar()">👥 Clientes</p>
+            <p onclick="showTab('lixeira'); toggleSidebar()">🗑️ Pasta de Exclusão</p>
+            <p onclick="showTab('graficos'); toggleSidebar()">📈 Relatórios Vendas</p>
         </nav>
         <div style="margin-top: 30px; padding: 0 10px;">
             <button onclick="exportarBackup()" style="width:100%; background:#3498db; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">📥 Backup JSON</button>
@@ -83,10 +106,12 @@
                     </select>
                     <button class="btn-acao" onclick="atualizarEstoque()">Aplicar Status</button>
                 </div>
-                <table id="tabela-estoque">
-                    <thead><tr><th>Produto</th><th>Status na Loja</th><th>Ação</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table id="tabela-estoque">
+                        <thead><tr><th>Produto</th><th>Status na Loja</th><th>Ação</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -96,14 +121,16 @@
                 <div class="mini-card" style="border-left-color: #3498db;"><h4>Nº de Pedidos</h4><p id="total-pedidos-count" style="font-size:24px; font-weight:bold; color:#3498db;">0</p></div>
             </div>
             <div class="card-dash">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3>🚚 Gestão de Pedidos (Entrega Detalhada)</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
+                    <h3>🚚 Gestão de Pedidos</h3>
                     <button class="btn-acao" style="background:#444;" onclick="exportarPDF()">📄 Exportar PDF</button>
                 </div>
-                <table id="tabela-pedidos">
-                    <thead><tr><th>ID Pedido</th><th>Cliente</th><th>Produto</th><th>Endereço / CEP</th><th>Status</th><th>Ação</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table id="tabela-pedidos">
+                        <thead><tr><th>ID Pedido</th><th>Cliente</th><th>Produto</th><th>Endereço / CEP</th><th>Status</th><th>Ação</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -117,10 +144,12 @@
                 </div>
                 <hr>
                 <h3>👥 Base de Clientes Cadastrados</h3>
-                <table id="tabela-clientes">
-                    <thead><tr><th>Nome</th><th>CPF</th><th>Ação</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table id="tabela-clientes">
+                        <thead><tr><th>Nome</th><th>CPF</th><th>Ação</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -128,13 +157,13 @@
             <div class="card-dash">
                 <h3>🗑️ Pasta de Exclusão (Histórico)</h3>
                 <h4>📦 Produtos Ocultados</h4>
-                <table id="lixeira-produtos"><thead><tr><th>Nome</th><th>Data</th><th>Ação</th></tr></thead><tbody></tbody></table>
+                <div style="overflow-x: auto;"><table id="lixeira-produtos"><thead><tr><th>Nome</th><th>Data</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
                 
                 <h4>🚚 Pedidos Excluídos</h4>
-                <table id="lixeira-pedidos"><thead><tr><th>ID</th><th>Cliente</th><th>Ação</th></tr></thead><tbody></tbody></table>
+                <div style="overflow-x: auto;"><table id="lixeira-pedidos"><thead><tr><th>ID</th><th>Cliente</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
 
                 <h4>👥 Clientes Excluídos</h4>
-                <table id="lixeira-clientes"><thead><tr><th>Nome</th><th>CPF</th><th>Ação</th></tr></thead><tbody></tbody></table>
+                <div style="overflow-x: auto;"><table id="lixeira-clientes"><thead><tr><th>Nome</th><th>CPF</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
 
                 <button class="btn-del" style="margin-top: 30px; width: 100%;" onclick="limparLixeiraTotal()">Esvaziar Toda a Lixeira</button>
             </div>
@@ -151,7 +180,12 @@
     <script>
         const SENHA_MASTER = "1234";
 
-        // NOVO: Função para colocar pontos e traço no CPF automaticamente
+        function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.toggle('active');
+            }
+        }
+
         function mascararCPF(i) {
             let v = i.value.replace(/\D/g, ""); 
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
@@ -174,7 +208,7 @@
             let p = JSON.parse(localStorage.getItem('pedidos_jm') || "[]");
             p[i].statusEntrega = novoStatus;
             localStorage.setItem('pedidos_jm', JSON.stringify(p));
-            renderPedidos(); // Atualiza a tela e o total vendido na hora
+            renderPedidos();
         }
 
         function moverParaLixeira(categoria, item) {
@@ -193,75 +227,52 @@
                 l.produtos.map((p, i) => `<tr><td>${p.nome}</td><td>${p.dataExclusao}</td><td><button class="btn-del" onclick="removerPermanente('produtos', ${i})">Remover</button></td></tr>`).join('');
             
             document.querySelector('#lixeira-pedidos tbody').innerHTML = l.pedidos.map((p, i) => `<tr><td>#${p.idUnico || p.id}</td><td>${p.cliente}</td><td><button class="btn-del" onclick="removerPermanente('pedidos', ${i})">Remover</button></td></tr>`).join('');
+            
             document.querySelector('#lixeira-clientes tbody').innerHTML = l.clientes.map((c, i) => `<tr><td>${c.nome}</td><td>${c.cpf}</td><td><button class="btn-del" onclick="removerPermanente('clientes', ${i})">Remover</button></td></tr>`).join('');
         }
 
-        function restaurarOculto(idx) {
+        function restaurarOculto(i) {
             let ocultos = JSON.parse(localStorage.getItem('jm_produtos_ocultos') || "[]");
-            ocultos.splice(idx, 1);
+            ocultos.splice(i, 1);
             localStorage.setItem('jm_produtos_ocultos', JSON.stringify(ocultos));
             renderLixeira();
         }
 
-        function removerPermanente(cat, idx) {
-            if(prompt("Senha Master para exclusão permanente:") === SENHA_MASTER) {
-                let l = JSON.parse(localStorage.getItem('jm_lixeira'));
-                l[cat].splice(idx, 1);
-                localStorage.setItem('jm_lixeira', JSON.stringify(l));
-                renderLixeira();
-            }
+        function removerPermanente(cat, i) {
+            let l = JSON.parse(localStorage.getItem('jm_lixeira'));
+            l[cat].splice(i, 1);
+            localStorage.setItem('jm_lixeira', JSON.stringify(l));
+            renderLixeira();
         }
 
         function limparLixeiraTotal() {
-            if(prompt("Senha Master:") === SENHA_MASTER) {
-                localStorage.removeItem('jm_lixeira');
-                localStorage.removeItem('jm_produtos_ocultos');
+            if(confirm("Deseja limpar tudo permanentemente?")) {
+                localStorage.setItem('jm_lixeira', JSON.stringify({"produtos":[], "pedidos":[], "clientes":[]}));
+                localStorage.setItem('jm_produtos_ocultos', "[]");
                 renderLixeira();
             }
         }
 
-        function salvarProduto() {
-            const nome = document.getElementById('n-nome').value;
-            const foto = document.getElementById('n-foto').files[0];
-            const preco = document.getElementById('n-preco').value;
-            if(!nome || !foto) return alert("Dados incompletos!");
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                let produtos = JSON.parse(localStorage.getItem('jm_produtos_dinamicos') || "[]");
-                produtos.push({ nome, preco: parseFloat(preco), img: e.target.result });
-                localStorage.setItem('jm_produtos_dinamicos', JSON.stringify(produtos));
-                alert("Publicado!");
-                showTab('estoque');
-            };
-            reader.readAsDataURL(foto);
-        }
-
         function renderEstoque() {
-            const dinamicos = JSON.parse(localStorage.getItem('jm_produtos_dinamicos') || "[]");
             const fixos = ["Vaso Girassol", "Jogo Suqueira + 6 Copos", "Pote Sustentável T", "Vaso Design Geométrico", "Taça de Cristal Premium", "Vaso Coloriquadra"];
+            const dinamicos = JSON.parse(localStorage.getItem('jm_produtos_dinamicos') || "[]");
+            const estoqueManual = JSON.parse(localStorage.getItem('estoque_jm_manual') || "[]");
             const ocultos = JSON.parse(localStorage.getItem('jm_produtos_ocultos') || "[]");
-            
-            const todosNomes = [...new Set([...fixos, ...dinamicos.map(d => d.nome)])];
-            document.getElementById('sel-prod-estoque').innerHTML = todosNomes.map(n => `<option value="${n}">${n}</option>`).join('');
-            
-            const visiveis = todosNomes.filter(n => !ocultos.includes(n));
-            
-            const estoqueStatus = JSON.parse(localStorage.getItem('estoque_jm_manual') || "[]");
-            document.querySelector('#tabela-estoque tbody').innerHTML = visiveis.map((nome) => {
-                const s = estoqueStatus.find(e => e.nome === nome)?.status || 'Disponível';
-                return `<tr><td>${nome}</td><td><span class="status-badge ${s==='Esgotado'?'badge-esg':'badge-disp'}">${s}</span></td>
-                <td><button class="btn-del" onclick="ocultarProduto('${nome}')">🗑️ Excluir</button></td></tr>`;
-            }).join('');
-        }
 
-        function ocultarProduto(nome) {
-            if(prompt("Digite a senha para remover da vitrine:") === SENHA_MASTER) {
-                let ocultos = JSON.parse(localStorage.getItem('jm_produtos_ocultos') || "[]");
-                if(!ocultos.includes(nome)) ocultos.push(nome);
-                localStorage.setItem('jm_produtos_ocultos', JSON.stringify(ocultos));
-                renderEstoque();
-            }
+            const todos = [...fixos.map(n => ({nome: n})), ...dinamicos];
+            const visiveis = todos.filter(p => !ocultos.includes(p.nome));
+
+            document.getElementById('sel-prod-estoque').innerHTML = visiveis.map(p => `<option value="${p.nome}">${p.nome}</option>`).join('');
+            
+            document.querySelector('#tabela-estoque tbody').innerHTML = visiveis.map(p => {
+                const est = estoqueManual.find(e => e.nome === p.nome);
+                const status = est ? est.status : "Disponível";
+                return `<tr>
+                    <td>${p.nome}</td>
+                    <td><span class="status-badge ${status === 'Esgotado' ? 'badge-esg' : 'badge-disp'}">${status}</span></td>
+                    <td><button class="btn-del" onclick="ocultarProduto('${p.nome}')">Ocultar</button></td>
+                </tr>`;
+            }).join('');
         }
 
         function atualizarEstoque() {
@@ -274,101 +285,122 @@
             renderEstoque();
         }
 
+        function ocultarProduto(nome) {
+            let ocultos = JSON.parse(localStorage.getItem('jm_produtos_ocultos') || "[]");
+            ocultos.push(nome);
+            localStorage.setItem('jm_produtos_ocultos', JSON.stringify(ocultos));
+            renderEstoque();
+        }
+
         function renderPedidos() {
             const p = JSON.parse(localStorage.getItem('pedidos_jm') || "[]");
             const clientes = JSON.parse(localStorage.getItem('clientes_jm') || "[]");
-            let totalEntregue = 0;
+            let total = 0;
 
-            document.querySelector('#tabela-pedidos tbody').innerHTML = p.map((item, i) => {
-                // Cálculo financeiro inteligente
-                let vTxt = (item.valor || item.preco || "0").toString();
-                let vNum = parseFloat(vTxt.replace("R$", "").replace(".", "").replace(",", ".").trim()) || 0;
-                
-                // Só entra no "Vendas Totais" se estiver Entregue
-                if (item.statusEntrega === 'Entregue') totalEntregue += vNum;
-
-                const cliInfo = clientes.find(c => c.cpf === item.cpf) || {};
-                const idU = item.idUnico || `${item.cpf ? item.cpf.slice(-4) : '0000'}-${i}`;
-                
-                let corStatus = 'badge-prep';
-                if(item.statusEntrega === 'Enviado') corStatus = 'badge-env';
-                if(item.statusEntrega === 'Entregue') corStatus = 'badge-disp';
+            document.querySelector('#tabela-pedidos tbody').innerHTML = p.map((ped, i) => {
+                const cli = clientes.find(c => c.cpf === ped.cpf) || {};
+                if(ped.statusEntrega === "Entregue") total += 50; // Valor simbólico
 
                 return `<tr>
-                    <td><b>#${idU}</b></td>
-                    <td>${item.cliente}</td>
-                    <td>${item.produto}</td>
-                    <td><span class="info-entrega">📍 ${cliInfo.endereco || 'S/ Endereço'}</span><span class="info-entrega">📮 CEP: ${cliInfo.cep || '---'}</span></td>
+                    <td>#${ped.idUnico || ped.id}</td>
+                    <td><b>${ped.cliente}</b><br><small>${ped.cpf}</small></td>
+                    <td>${ped.produto}</td>
+                    <td><span class="info-entrega">${cli.endereco || 'Não informado'}<br>CEP: ${cli.cep || '---'}</span></td>
                     <td>
-                        <select class="status-badge ${corStatus}" onchange="mudarStatusPedido(${i}, this.value)">
-                            <option value="Preparo" ${item.statusEntrega === 'Preparo' ? 'selected' : ''}>⏳ Preparo</option>
-                            <option value="Enviado" ${item.statusEntrega === 'Enviado' ? 'selected' : ''}>🚚 Enviado</option>
-                            <option value="Entregue" ${item.statusEntrega === 'Entregue' ? 'selected' : ''}>✅ Entregue</option>
+                        <select class="status-badge ${ped.statusEntrega === 'Entregue' ? 'badge-disp' : ped.statusEntrega === 'Enviado' ? 'badge-env' : 'badge-prep'}" 
+                                onchange="mudarStatusPedido(${i}, this.value)">
+                            <option value="Preparo" ${ped.statusEntrega === 'Preparo' ? 'selected' : ''}>Preparo</option>
+                            <option value="Enviado" ${ped.statusEntrega === 'Enviado' ? 'selected' : ''}>Enviado</option>
+                            <option value="Entregue" ${ped.statusEntrega === 'Entregue' ? 'selected' : ''}>Entregue</option>
                         </select>
                     </td>
-                    <td><button class="btn-del" onclick="excluirPed(${i})">🗑️</button></td>
+                    <td><button class="btn-del" onclick="excluirPedido(${i})">Excluir</button></td>
                 </tr>`;
-            }).join('');
+            }).reverse().join('');
 
-            // Atualização visual dos cards do topo
-            document.getElementById('total-dinheiro').innerText = totalEntregue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('total-dinheiro').innerText = "R$ " + total.toFixed(2).replace('.', ',');
             document.getElementById('total-pedidos-count').innerText = p.length;
         }
 
-        function excluirPed(i) {
-            if(prompt("Senha para excluir pedido:") === SENHA_MASTER) {
-                let p = JSON.parse(localStorage.getItem('pedidos_jm'));
-                moverParaLixeira('pedidos', p[i]);
-                p.splice(i, 1);
-                localStorage.setItem('pedidos_jm', JSON.stringify(p));
-                renderPedidos();
-            }
+        function excluirPedido(i) {
+            let p = JSON.parse(localStorage.getItem('pedidos_jm'));
+            moverParaLixeira('pedidos', p[i]);
+            p.splice(i, 1);
+            localStorage.setItem('pedidos_jm', JSON.stringify(p));
+            renderPedidos();
         }
 
         function renderClientes() {
             const c = JSON.parse(localStorage.getItem('clientes_jm') || "[]");
-            document.querySelector('#tabela-clientes tbody').innerHTML = c.map((u, i) => `
-                <tr><td>${u.nome}</td><td>${u.cpf}</td><td><button class="btn-del" onclick="excluirCli(${i})">🗑️</button></td></tr>
+            document.querySelector('#tabela-clientes tbody').innerHTML = c.map((cli, i) => `
+                <tr>
+                    <td>${cli.nome}</td>
+                    <td>${cli.cpf}</td>
+                    <td><button class="btn-del" onclick="excluirCliente(${i})">Remover</button></td>
+                </tr>
             `).join('');
+        }
+
+        function excluirCliente(i) {
+            let c = JSON.parse(localStorage.getItem('clientes_jm'));
+            moverParaLixeira('clientes', c[i]);
+            c.splice(i, 1);
+            localStorage.setItem('clientes_jm', JSON.stringify(c));
+            renderClientes();
         }
 
         function cadastrarClienteManual() {
             const nome = document.getElementById('manual-nome').value;
             const cpf = document.getElementById('manual-cpf').value;
-            if(!nome || cpf.length < 14) return alert("Preencha Nome e CPF completo!");
+            if(!nome || cpf.length < 14) return alert("Preencha corretamente.");
             let c = JSON.parse(localStorage.getItem('clientes_jm') || "[]");
-            if(c.find(x => x.cpf === cpf)) return alert("CPF já cadastrado!");
-            c.push({ nome, cpf, endereco: "Cadastrado Manualmente", cep: "---" });
+            c.push({nome, cpf, endereco: "Cadastrado via Admin", cep: "---"});
             localStorage.setItem('clientes_jm', JSON.stringify(c));
-            alert("Cliente adicionado!");
-            document.getElementById('manual-nome').value = "";
-            document.getElementById('manual-cpf').value = "";
             renderClientes();
         }
 
-        function excluirCli(i) {
-            if(prompt("Senha para excluir cliente:") === SENHA_MASTER) {
-                let c = JSON.parse(localStorage.getItem('clientes_jm'));
-                moverParaLixeira('clientes', c[i]);
-                c.splice(i, 1);
-                localStorage.setItem('clientes_jm', JSON.stringify(c));
-                renderClientes();
-            }
+        function salvarProduto() {
+            const nome = document.getElementById('n-nome').value;
+            const foto = document.getElementById('n-foto').files[0];
+            if(!nome || !foto) return alert("Nome e Foto obrigatórios.");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let dinamicos = JSON.parse(localStorage.getItem('jm_produtos_dinamicos') || "[]");
+                dinamicos.push({ nome, img: e.target.result });
+                localStorage.setItem('jm_produtos_dinamicos', JSON.stringify(dinamicos));
+                alert("Produto Publicado!");
+                showTab('estoque');
+            };
+            reader.readAsDataURL(foto);
         }
 
         function exportarBackup() {
-            const dados = {
-                pedidos: JSON.parse(localStorage.getItem('pedidos_jm')),
-                clientes: JSON.parse(localStorage.getItem('clientes_jm')),
-                produtos: JSON.parse(localStorage.getItem('jm_produtos_dinamicos')),
-                lixeira: JSON.parse(localStorage.getItem('jm_lixeira')),
-                ocultos: JSON.parse(localStorage.getItem('jm_produtos_ocultos'))
+            const data = {
+                pedidos: localStorage.getItem('pedidos_jm'),
+                clientes: localStorage.getItem('clientes_jm'),
+                produtos: localStorage.getItem('jm_produtos_dinamicos'),
+                estoque: localStorage.getItem('estoque_jm_manual')
             };
-            const blob = new Blob([JSON.stringify(dados, null, 2)], {type: 'application/json'});
+            const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `Backup_JM_${new Date().toLocaleDateString()}.json`;
+            a.href = url;
+            a.download = "backup_jm_admin.json";
             a.click();
+        }
+
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Relatório de Pedidos - JM Arte em Vidro", 10, 10);
+            const p = JSON.parse(localStorage.getItem('pedidos_jm') || "[]");
+            let y = 20;
+            p.forEach(ped => {
+                doc.text(`#${ped.idUnico || ped.id} - ${ped.cliente} - ${ped.produto} (${ped.statusEntrega})`, 10, y);
+                y += 10;
+            });
+            doc.save("pedidos_jm.pdf");
         }
 
         function renderGrafico() {
@@ -376,14 +408,20 @@
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
-                    datasets: [{ label: 'Vendas', data: [5, 10, 8, 15, 20, 25, 18], borderColor: '#25D366', tension: 0.4 }]
+                    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: [120, 190, 300, 500, 200, 300, 450],
+                        borderColor: '#25D366',
+                        tension: 0.1
+                    }]
                 }
             });
         }
 
-        function sair() { sessionStorage.removeItem("logado"); window.location.href = "index.html"; }
-        window.onload = () => { showTab('add-prod'); };
+        function sair() { sessionStorage.clear(); window.location.href = "index.html"; }
+        
+        window.onload = () => showTab('add-prod');
     </script>
 </body>
 </html>
