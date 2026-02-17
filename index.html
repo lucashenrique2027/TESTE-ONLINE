@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arte em Vidro | Vitrine</title>
-  <link rel="icon" type="image/png" href="img/logo.jpeg">
+  <link  rel =" icon " type =" image/png " href =" img/logoWhatsApp Image 2025-07-29 at 18.56.23.jpeg " >
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -171,7 +171,7 @@ async function fazerLogin() {
     if(cliente) {
         localStorage.setItem('user_jm_logado', JSON.stringify(cliente));
         fecharModais();
-        location.reload(); // Recarrega para aplicar o login
+        location.reload(); 
     } else {
         alert("CPF não encontrado.");
     }
@@ -231,7 +231,14 @@ function abrirModalCadastro() { fecharModais(); document.getElementById('modalCa
 function logoutUsuario() { localStorage.removeItem('user_jm_logado'); location.reload(); }
 function mascaraCPF(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"); }
 function mascaraCEP(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"); }
-function executarAcessoAdmin() { if(prompt("Senha:") === "1234") { sessionStorage.setItem("logado","true"); window.location.href="login_admin.html"; } }
+
+// ALTERAÇÃO AQUI: Agora abre o Admin em nova aba sem tirar o cliente da Vitrine
+function executarAcessoAdmin() { 
+    if(prompt("Senha:") === "1234") { 
+        sessionStorage.setItem("logado","true"); 
+        window.open("login_admin.html", "_blank"); 
+    } 
+}
 
 window.onload = carregarVitrine;
 </script>
