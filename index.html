@@ -6,29 +6,45 @@
   <title>Arte em Vidro | Vitrine</title>
   <link rel="icon" type="image/png" href="img/logo.jpeg">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { background-color: #f4f7f6; color: #333; font-family: 'Montserrat', sans-serif; margin: 0; }
     header { background: #fff; padding: 10px 0; border-bottom: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1000; }
     .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    
     .user-menu { display: flex; align-items: center; gap: 12px; position: relative; cursor: pointer; }
-    .dropdown-content { display: none; position: absolute; right: 0; top: 40px; background: white; min-width: 250px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); z-index: 100; border-radius: 8px; padding: 15px; border: 1px solid #eee; }
+    .dropdown-content {
+        display: none; position: absolute; right: 0; top: 40px; background: white;
+        min-width: 250px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); z-index: 100; border-radius: 8px; padding: 15px; border: 1px solid #eee;
+    }
+    
     .galeria-profissional { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
     .card-item { background: #fff; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #eee; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: relative; display: flex; flex-direction: column; }
+    
     .selo-status { position: absolute; top: 15px; left: 15px; padding: 5px 12px; font-size: 10px; font-weight: bold; border-radius: 4px; z-index: 10; color: white; text-transform: uppercase; }
+
     .img-container img { width: 100%; height: 350px; object-fit: cover; border-radius: 8px; background: #eee; }
+
     .compra-acoes { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 15px; }
     .controle-qtd { display: flex; align-items: center; background: #fff; border-radius: 5px; border: 1px solid #bbb; overflow: hidden; }
     .btn-qtd { background: #eee; border: none; width: 35px; height: 38px; cursor: pointer; font-weight: bold; font-size: 18px; color: #000; }
-    .qtd-seletor { width: 45px; height: 38px; text-align: center; border: none; background: #fff; font-weight: bold; font-size: 16px; color: #000 !important; }
+    
+    .qtd-seletor { 
+        width: 45px; height: 38px; text-align: center; border: none; 
+        background: #fff; font-weight: bold; font-size: 16px; color: #000 !important; 
+    }
+    
     .btn-add { flex: 1; background-color: #25D366; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; height: 38px; }
     .btn-info { width: 100%; margin-top: 8px; background-color: #f8f9fa; color: #555; border: 1px solid #ddd; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; }
+
     .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display:none; justify-content: center; align-items: center; z-index: 2000; }
     .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; max-height: 90vh; overflow-y: auto; }
     input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
     .btn-acao { background: #25D366; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
     .link-voltar { display: block; margin-top: 15px; color: #666; font-size: 13px; cursor: pointer; text-decoration: underline; }
+    
     .status-item { font-size: 12px; padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+
+    /* Ajustes para Celular */
     @media (max-width: 600px) {
         .header-container { padding: 0 15px; }
         h1 { font-size: 18px !important; }
@@ -99,10 +115,6 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'https://pubyfyfivodmnzrwpdhe.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_D87EPGcjKSxvp_GN5oaqxA_BsCL4EfY';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const produtosFixos = [
     { nome: "Vaso Girassol", img: "img/girasol WhatsApp Image 2025-08-13 at 17.14.00.jpeg" },
     { nome: "Jogo Suqueira + 6 Copos", img: "img/6 copos suqueira Image 1 de set. de 2025, 13_30_19.png" },
@@ -112,18 +124,18 @@ const produtosFixos = [
     { nome: "Vaso Coloriquadra", img: "img/vaso-coloriquadra Image 1 de set. de 2025, 16_28_27.png" }
 ];
 
-async function carregarVitrine() {
+function carregarVitrine() {
     const vitrine = document.getElementById('vitrine');
-    const { data: produtosDB, error } = await supabase.from('produtos').select('*');
-    
-    if (error) {
-        console.error('Erro ao carregar produtos:', error);
-        return;
-    }
+    const dinamicos = JSON.parse(localStorage.getItem('jm_produtos_dinamicos') || "[]");
+    const ocultos = JSON.parse(localStorage.getItem('jm_produtos_ocultos') || "[]");
+    const estoqueManual = JSON.parse(localStorage.getItem('estoque_jm_manual') || "[]");
 
-    const novoConteudo = produtosFixos.map((p, index) => {
-        const dbProd = produtosDB.find(db => db.nome === p.nome);
-        const esgotado = dbProd && dbProd.status === "Esgotado";
+    const todosOsProdutos = [...produtosFixos, ...dinamicos];
+    const visiveis = todosOsProdutos.filter(p => !ocultos.includes(p.nome));
+
+    const novoConteudo = visiveis.map((p, index) => {
+        const est = estoqueManual.find(e => e.nome.toLowerCase() === p.nome.toLowerCase());
+        const esgotado = est && est.status === "Esgotado";
 
         return `
             <div class="card-item" style="${esgotado ? 'opacity: 0.7;' : ''}">
@@ -145,38 +157,35 @@ async function carregarVitrine() {
         `;
     }).join('');
 
-    vitrine.innerHTML = novoConteudo;
+    if(vitrine.innerHTML !== novoConteudo) {
+        vitrine.innerHTML = novoConteudo;
+    }
     verificarLogin();
 }
 
-// Escutar mudanças em tempo real
-supabase.channel('custom-all-channel')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'produtos' }, () => carregarVitrine())
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => verificarLogin())
-  .subscribe();
+// ATUALIZAÇÃO AUTOMÁTICA A CADA 1 SEGUNDO
+setInterval(carregarVitrine, 1000);
 
-setInterval(carregarVitrine, 5000); // Backup de atualização a cada 5s
-
-async function pedir(nome, index) {
+function pedir(nome, index) {
     const user = JSON.parse(localStorage.getItem('user_jm_logado'));
     if(!user) return abrirModalEscolha();
     
     const qtd = document.getElementById(`qtd-${index}`).value;
+    let p = JSON.parse(localStorage.getItem('pedidos_jm') || "[]");
     const idPedido = Math.floor(1000 + Math.random() * 9000);
 
-    const { error } = await supabase.from('pedidos').insert([{
-        id_unico: idPedido,
-        cliente_nome: user.nome,
-        cliente_cpf: user.cpf,
-        produto_nome: `${qtd}x ${nome}`,
-        status_entrega: "Preparo"
-    }]);
-
-    if (error) {
-        alert("Erro ao enviar pedido: " + error.message);
-    } else {
-        alert("Pedido #" + idPedido + " enviado com sucesso!");
-    }
+    p.push({ 
+        id: Date.now(), 
+        idUnico: idPedido,
+        cliente: user.nome, 
+        cpf: user.cpf, 
+        produto: `${qtd}x ${nome}`, 
+        statusEntrega: "Preparo",
+        fotoCliente: null 
+    });
+    
+    localStorage.setItem('pedidos_jm', JSON.stringify(p));
+    alert("Pedido #" + idPedido + " enviado com sucesso!");
 }
 
 function altQtd(idx, d) {
@@ -186,7 +195,7 @@ function altQtd(idx, d) {
     input.value = v;
 }
 
-async function verificarLogin() {
+function verificarLogin() {
     const user = JSON.parse(localStorage.getItem('user_jm_logado'));
     if(user) {
         document.getElementById('nome-usuario-logado').innerText = "Olá, " + user.nome.split(' ')[0];
@@ -194,19 +203,15 @@ async function verificarLogin() {
         document.getElementById('menu-logado').style.display = 'block';
         document.getElementById('menu-deslogado').style.display = 'none';
         
-        const { data: pedidos, error } = await supabase.from('pedidos')
-            .select('*')
-            .eq('cliente_cpf', user.cpf)
-            .order('criado_em', { ascending: false })
-            .limit(3);
-
-        if (!error && pedidos) {
-            const htmlPedidos = pedidos.length > 0 ? pedidos.map(x => `
+        const p = JSON.parse(localStorage.getItem('pedidos_jm') || "[]").filter(x => x.cpf === user.cpf);
+        const htmlPedidos = p.length > 0 ? p.reverse().slice(0,3).map(x => `
                 <div class="status-item" style="border-left: 3px solid #25D366; padding-left: 10px; margin-bottom: 12px;">
-                    <b>${x.produto_nome}</b><br>
-                    <small>Status: <span style="color:#25D366; font-weight:bold;">${x.status_entrega || "Preparo"}</span></small>
+                    <b>${x.produto}</b><br>
+                    <small>Status: <span style="color:#25D366; font-weight:bold;">${x.statusEntrega || "Preparo"}</span></small>
                 </div>
             `).join('') : "<p style='font-size:11px; color:#999;'>Sem pedidos.</p>";
+        
+        if(document.getElementById('status-pedidos-menu').innerHTML !== htmlPedidos) {
             document.getElementById('status-pedidos-menu').innerHTML = htmlPedidos;
         }
     }
@@ -218,13 +223,13 @@ function abrirModalLogin() { fecharModais(); document.getElementById('modalLogin
 function abrirModalCadastro() { fecharModais(); document.getElementById('modalCadastro').style.display = 'flex'; }
 function fecharModais() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
 function logoutUsuario() { localStorage.removeItem('user_jm_logado'); location.reload(); }
+
 function mascaraCPF(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"); }
 function mascaraCEP(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"); }
 
 function fazerLogin() {
     const cpf = document.getElementById('login-cpf').value;
-    const clientes = JSON.parse(localStorage.getItem('clientes_jm') || "[]");
-    const u = clientes.find(c => c.cpf === cpf);
+    const u = JSON.parse(localStorage.getItem('clientes_jm') || "[]").find(c => c.cpf === cpf);
     if(u) { localStorage.setItem('user_jm_logado', JSON.stringify(u)); location.reload(); } else alert("CPF não encontrado.");
 }
 
