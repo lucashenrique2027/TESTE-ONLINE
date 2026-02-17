@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* TODO O SEU CSS ORIGINAL MANTIDO SEM ALTERAÇÕES */
     body { background-color: #f4f7f6; color: #333; font-family: 'Montserrat', sans-serif; margin: 0; }
     header { background: #fff; padding: 10px 0; border-bottom: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1000; }
     .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
@@ -114,7 +113,6 @@ const produtosFixos = [
     { nome: "Vaso Coloriquadra", img: "img/vaso-coloriquadra Image 1 de set. de 2025, 16_28_27.png" }
 ];
 
-// CARREGAR VITRINE COM REALTIME
 async function carregarVitrine() {
     const vitrine = document.getElementById('vitrine');
     const { data: produtosDB } = await supabaseClient.from('produtos').select('*');
@@ -145,10 +143,11 @@ async function carregarVitrine() {
     verificarLogin();
 }
 
-// REALTIME (F5 AUTOMÁTICO)
-supabaseClient.channel('realtime-updates').on('postgres_changes', { event: '*', schema: 'public' }, () => carregarVitrine()).subscribe();
+// ATUALIZAÇÃO EM TEMPO REAL (SEM PRECISAR DE F5)
+supabaseClient.channel('jm-updates').on('postgres_changes', { event: '*', schema: 'public' }, () => {
+    carregarVitrine();
+}).subscribe();
 
-// FUNÇÃO PEDIR
 async function pedir(nome, index) {
     const user = JSON.parse(localStorage.getItem('user_jm_logado'));
     if(!user) return abrirModalEscolha();
@@ -162,18 +161,44 @@ async function pedir(nome, index) {
         status_entrega: "Preparo"
     }]);
 
-    if(!error) alert("Pedido enviado com sucesso!");
-    else alert("Erro ao pedir.");
+    if(!error) alert("Pedido enviado!");
 }
 
-function altQtd(idx, d) {
-    const input = document.getElementById(`qtd-${idx}`);
-    let v = parseInt(input.value) + d;
-    if(v < 1) v = 1; 
-    input.value = v;
+async function fazerLogin() {
+    const cpf = document.getElementById('login-cpf').value;
+    const { data: cliente, error } = await supabaseClient.from('clientes').select('*').eq('cpf', cpf).single();
+
+    if(cliente) {
+        localStorage.setItem('user_jm_logado', JSON.stringify(cliente));
+        fecharModais();
+        location.reload(); // Recarrega para aplicar o login
+    } else {
+        alert("CPF não encontrado.");
+    }
 }
 
-// VERIFICAÇÃO DE LOGIN
+async function salvarCliente() {
+    const n = document.getElementById('nome-cli').value;
+    const c = document.getElementById('cpf-cli').value;
+    const end = document.getElementById('end-cli').value;
+    const cep = document.getElementById('cep-cli').value;
+    const obs = document.getElementById('obs-cli').value;
+
+    if(!n || !c || !end) return alert("Preencha Nome, CPF e Endereço.");
+
+    const { error } = await supabaseClient.from('clientes').insert([{
+        nome: n, cpf: c, endereco: end, cep: cep, observacoes: obs
+    }]);
+
+    if(!error) {
+        localStorage.setItem('user_jm_logado', JSON.stringify({ nome: n, cpf: c }));
+        alert("Cadastro realizado!");
+        location.reload();
+    } else {
+        alert("Erro no cadastro ou CPF já existe.");
+    }
+}
+
 async function verificarLogin() {
     const user = JSON.parse(localStorage.getItem('user_jm_logado'));
     if(user) {
@@ -183,49 +208,26 @@ async function verificarLogin() {
         document.getElementById('menu-deslogado').style.display = 'none';
         
         const { data: pedidos } = await supabaseClient.from('pedidos').select('*').eq('cliente_cpf', user.cpf).order('id', { ascending: false });
-        if (pedidos) {
-            document.getElementById('status-pedidos-menu').innerHTML = pedidos.map(x => `
-                <div class="status-item">
-                    <b>${x.produto_nome}</b><br>
-                    <small>Status: <span style="color:#25D366; font-weight:bold;">${x.status_entrega}</span></small>
-                </div>
+        if(pedidos) {
+            document.getElementById('status-pedidos-menu').innerHTML = pedidos.map(p => `
+                <div class="status-item">${p.produto_nome}: <b>${p.status_entrega}</b></div>
             `).join('');
         }
     }
 }
 
-// LOGIN
-async function fazerLogin() {
-    const cpf = document.getElementById('login-cpf').value;
-    const { data } = await supabaseClient.from('clientes').select('*').eq('cpf', cpf).single();
-    if(data) { 
-        localStorage.setItem('user_jm_logado', JSON.stringify(data)); 
-        location.reload(); 
-    } else alert("CPF não encontrado.");
+function altQtd(idx, d) {
+    const input = document.getElementById(`qtd-${idx}`);
+    let v = parseInt(input.value) + d;
+    if(v < 1) v = 1; 
+    input.value = v;
 }
 
-// CADASTRO
-async function salvarCliente() {
-    const n = document.getElementById('nome-cli').value;
-    const c = document.getElementById('cpf-cli').value;
-    const end = document.getElementById('end-cli').value;
-    const { error } = await supabaseClient.from('clientes').insert([{ 
-        nome: n, cpf: c, cep: document.getElementById('cep-cli').value, endereco: end, observacoes: document.getElementById('obs-cli').value
-    }]);
-
-    if(!error) {
-        localStorage.setItem('user_jm_logado', JSON.stringify({ nome: n, cpf: c }));
-        alert("Cadastrado!");
-        location.reload();
-    } else alert("Erro ao cadastrar.");
-}
-
-// INTERFACE
 function toggleUserMenu() { const m = document.getElementById('dropdown-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+function fecharModais() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
 function abrirModalEscolha() { fecharModais(); document.getElementById('modalEscolha').style.display = 'flex'; }
 function abrirModalLogin() { fecharModais(); document.getElementById('modalLogin').style.display = 'flex'; }
 function abrirModalCadastro() { fecharModais(); document.getElementById('modalCadastro').style.display = 'flex'; }
-function fecharModais() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
 function logoutUsuario() { localStorage.removeItem('user_jm_logado'); location.reload(); }
 function mascaraCPF(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"); }
 function mascaraCEP(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"); }
