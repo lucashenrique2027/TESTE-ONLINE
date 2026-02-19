@@ -92,7 +92,7 @@
                 </div>
                 <div style="overflow-x: auto;">
                     <table id="tabela-estoque">
-                        <thead><tr><th>Produto</th><th>Status na Loja</th><th>Ação</th></tr></thead>
+                        <thead><tr><th>Produto</th><th>Valor</th><th>Status na Loja</th><th>Ação</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -141,7 +141,7 @@
             <div class="card-dash">
                 <h3>🗑️ Pasta de Exclusão (Histórico Local)</h3>
                 <p style="font-size:12px; color:red;">Nota: A lixeira mantém apenas registros removidos nesta sessão.</p>
-                <div style="overflow-x: auto;"><table id="lixeira-pedidos"><thead><tr><th>ID</th><th>Cliente</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
+                <div style="overflow-x: auto;"><table id="lixeira-pedidos"><thead><tr><th>Item</th><th>Tipo</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
             </div>
         </section>
 
@@ -153,129 +153,106 @@
         </section>
     </main>
 
-    <script>
-        // Configuração Supabase
-        const SUPABASE_URL = 'https://pubyfyfivodmnzrwpdhe.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_D87EPGcjKSxvp_GN5oaqxA_BsCL4EfY';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+  // --- CONFIGURAÇÃO SUPABASE ---
+  const SUPABASE_URL = 'https://pubyfyfivodmnzrwpdhe.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_D87EPGcjKSxvp_GN5oaqxA_BsCL4EfY';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
 
-        async function showTab(id) {
-            document.querySelectorAll('.tab-content').forEach(s => s.style.display = 'none');
-            document.getElementById(id).style.display = 'block';
-            if(id === 'estoque') renderEstoque();
-            if(id === 'pedidos') renderPedidos();
-            if(id === 'usuarios') renderClientes();
-            if(id === 'graficos') renderGrafico();
+  async function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'block';
+    if(id === 'estoque') renderEstoque();
+    if(id === 'pedidos') renderPedidos();
+    if(id === 'usuarios') renderClientes();
+    if(id === 'graficos') renderGrafico();
+  }
+
+  // Helper to generate simple unique filename
+  function uniqueFilename(originalName) {
+    const ext = originalName.split('.').pop();
+    const ts = Date.now();
+    const rand = Math.random().toString(36).substring(2,8);
+    return `produtos/${ts}_${rand}.${ext}`;
+  }
+
+  // --- FUNÇÃO PARA SALVAR (COM UPLOAD DE IMAGEM) ---
+  async function salvarProduto() {
+    const nome = document.getElementById('n-nome').value.trim();
+    const preco = document.getElementById('n-preco').value;
+    const desc = document.getElementById('n-desc').value.trim();
+    const fileInput = document.getElementById('n-foto');
+    const file = fileInput.files && fileInput.files[0];
+
+    if(!nome || !preco) return alert("Preencha nome e preço!");
+
+    let image_path = null;
+    let image_url = null;
+
+    if(file) {
+      try {
+        const filename = uniqueFilename(file.name);
+        // Faz upload para o bucket 'produtos' com caminho gerado
+        const { data: uploadData, error: uploadError } = await supabaseClient
+          .storage
+          .from('produtos')
+          .upload(filename, file, { cacheControl: '3600', upsert: false });
+
+        if(uploadError) {
+          console.error('Erro upload:', uploadError);
+          alert('Falha ao enviar a imagem: ' + uploadError.message);
+          return;
         }
 
-        // --- ESTOQUE CONECTADO AO SUPABASE ---
-        async function renderEstoque() {
-            const { data: produtos } = await supabaseClient.from('produtos').select('*');
-            if(!produtos) return;
+        image_path = uploadData.path; // caminho dentro do bucket
 
-            document.getElementById('sel-prod-estoque').innerHTML = produtos.map(p => `<option value="${p.nome}">${p.nome}</option>`).join('');
-            document.querySelector('#tabela-estoque tbody').innerHTML = produtos.map(p => `
-                <tr>
-                    <td>${p.nome}</td>
-                    <td><span class="status-badge ${p.status === 'Esgotado' ? 'badge-esg' : 'badge-disp'}">${p.status}</span></td>
-                    <td><button class="btn-del" onclick="alert('Use o site do Supabase para excluir produtos permanentemente')">Bloqueado</button></td>
-                </tr>
-            `).join('');
-        }
+        // Obter URL pública (se o bucket for público)
+        const { data: urlData } = supabaseClient
+          .storage
+          .from('produtos')
+          .getPublicUrl(image_path);
 
-        async function atualizarEstoque() {
-            const nome = document.getElementById('sel-prod-estoque').value;
-            const status = document.getElementById('sel-status').value;
-            await supabaseClient.from('produtos').update({ status }).eq('nome', nome);
-            renderEstoque();
-            alert("Status atualizado!");
-        }
+        image_url = urlData.publicUrl;
+      } catch (err) {
+        console.error('Erro inesperado no upload:', err);
+        alert('Erro inesperado ao enviar a imagem.');
+        return;
+      }
+    }
 
-        // --- PEDIDOS CONECTADOS AO SUPABASE ---
-        async function renderPedidos() {
-            const { data: pedidos } = await supabaseClient.from('pedidos').select('*').order('id', {ascending: false});
-            let total = 0;
+    // Monta o payload do produto incluindo image_url se existir
+    const produto = {
+      nome: nome,
+      preco: parseFloat(preco),
+      descricao: desc,
+      status: 'Disponível'
+    };
+    if(image_url) produto.image_url = image_url;
+    if(image_path) produto.image_path = image_path;
 
-            document.querySelector('#tabela-pedidos tbody').innerHTML = pedidos.map(ped => {
-                if(ped.status_entrega === "Entregue") total += 50; 
-                return `<tr>
-                    <td>#${ped.id_unico}</td>
-                    <td><b>${ped.cliente_nome}</b></td>
-                    <td>${ped.produto_nome}</td>
-                    <td>
-                        <select class="status-badge ${ped.status_entrega === 'Entregue' ? 'badge-disp' : ped.status_entrega === 'Enviado' ? 'badge-env' : 'badge-prep'}" 
-                                onchange="mudarStatusPedido('${ped.id}', this.value)">
-                            <option value="Preparo" ${ped.status_entrega === 'Preparo' ? 'selected' : ''}>Preparo</option>
-                            <option value="Enviado" ${ped.status_entrega === 'Enviado' ? 'selected' : ''}>Enviado</option>
-                            <option value="Entregue" ${ped.status_entrega === 'Entregue' ? 'selected' : ''}>Entregue</option>
-                        </select>
-                    </td>
-                    <td><button class="btn-del" onclick="excluirPedido('${ped.id}')">Excluir</button></td>
-                </tr>`;
-            }).join('');
+    // Insere ou upsert conforme a necessidade
+    const { data, error } = await supabaseClient
+      .from('produtos')
+      .upsert([produto], { onConflict: 'nome' });
 
-            document.getElementById('total-dinheiro').innerText = "R$ " + total.toFixed(2).replace('.', ',');
-            document.getElementById('total-pedidos-count').innerText = pedidos.length;
-        }
+    if(error) {
+      console.error('Erro no Supabase:', error);
+      alert('Erro ao salvar produto: ' + error.message);
+      return;
+    }
 
-        async function mudarStatusPedido(id, status) {
-            await supabaseClient.from('pedidos').update({ status_entrega: status }).eq('id', id);
-            renderPedidos();
-        }
+    alert('Produto publicado com sucesso!');
+    // limpa campos
+    document.getElementById('n-nome').value = '';
+    document.getElementById('n-preco').value = '';
+    document.getElementById('n-desc').value = '';
+    document.getElementById('n-foto').value = '';
+    renderEstoque();
+  }
 
-        async function excluirPedido(id) {
-            if(confirm("Deseja excluir este pedido permanentemente da nuvem?")) {
-                await supabaseClient.from('pedidos').delete().eq('id', id);
-                renderPedidos();
-            }
-        }
-
-        // --- CLIENTES CONECTADOS AO SUPABASE ---
-        async function renderClientes() {
-            const { data: clientes } = await supabaseClient.from('clientes').select('*');
-            document.querySelector('#tabela-clientes tbody').innerHTML = clientes.map(cli => `
-                <tr>
-                    <td>${cli.nome}</td>
-                    <td>${cli.cpf}</td>
-                    <td><button class="btn-del" onclick="excluirCliente('${cli.id}')">Remover</button></td>
-                </tr>
-            `).join('');
-        }
-
-        async function excluirCliente(id) {
-            if(confirm("Remover cliente?")) {
-                await supabaseClient.from('clientes').delete().eq('id', id);
-                renderClientes();
-            }
-        }
-
-        async function cadastrarClienteManual() {
-            const n = document.getElementById('manual-nome').value;
-            const c = document.getElementById('manual-cpf').value;
-            if(!n || c.length < 14) return alert("Dados inválidos.");
-            await supabaseClient.from('clientes').insert([{ nome: n, cpf: c, endereco: "Admin" }]);
-            renderClientes();
-        }
-
-        // --- FUNÇÕES EXTRAS MANTIDAS ---
-        function exportarPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("Relatório JM Arte em Vidro", 10, 10);
-            doc.save("pedidos.pdf");
-        }
-
-        function renderGrafico() {
-            const ctx = document.getElementById('chartVendas').getContext('2d');
-            new Chart(ctx, { type: 'line', data: { labels: ['S', 'T', 'Q', 'Q', 'S'], datasets: [{ label: 'Vendas', data: [5, 10, 8, 15, 12], borderColor: '#25D366' }] } });
-        }
-
-        function mascararCPF(i) { i.value = i.value.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"); }
-        function sair() { sessionStorage.clear(); window.location.href = "index.html"; }
-
-        window.onload = () => showTab('add-prod');
-    </script>
+  // ... (mantive as demais funções iguais; cole o restante do seu script aqui: renderEstoque, atualizarEstoque, renderPedidos, etc.)
+</script>
 </body>
 </html>

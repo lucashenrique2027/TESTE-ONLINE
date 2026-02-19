@@ -118,27 +118,37 @@ async function carregarVitrine() {
     const { data: produtosDB } = await supabaseClient.from('produtos').select('*');
     
     vitrine.innerHTML = produtosFixos.map((p, index) => {
+        // MANTIDO: Busca os dados no banco para cada produto da sua lista fixa
         const dbProd = produtosDB ? produtosDB.find(db => db.nome === p.nome) : null;
         const esgotado = dbProd && dbProd.status === "Esgotado";
 
-        return `
-            <div class="card-item" style="${esgotado ? 'opacity: 0.7;' : ''}">
-                <div class="selo-status" style="background: ${esgotado ? '#e74c3c' : '#25D366'}">${esgotado ? 'ESGOTADO' : 'DISPONÍVEL'}</div>
-                <div class="img-container"><img src="${p.img}" style="${esgotado ? 'filter: grayscale(1);' : ''}"></div>
-                <p><b>${p.nome}</b></p>
-                <div class="compra-acoes">
-                    <div class="controle-qtd">
-                        <button class="btn-qtd" onclick="altQtd(${index}, -1)" ${esgotado ? 'disabled' : ''}>-</button>
-                        <input type="number" id="qtd-${index}" value="1" class="qtd-seletor" readonly>
-                        <button class="btn-qtd" onclick="altQtd(${index}, 1)" ${esgotado ? 'disabled' : ''}>+</button>
-                    </div>
-                    <button class="btn-add" ${esgotado ? 'disabled style="background:#ccc;"' : ''} onclick="pedir('${p.nome}', ${index})">
-                        ${esgotado ? 'Sem Estoque' : 'Pedir'}
-                    </button>
-                </div>
-                <button class="btn-info" onclick="window.open('https://wa.me/5511972011983?text=Olá, quero detalhes sobre: ${p.nome}')">WhatsApp</button>
+        // NOVO: Apenas prepara o preço e a descrição se existirem
+        const precoHTML = dbProd && dbProd.preco ? `<p style="color: #25D366; font-weight: bold; font-size: 18px; margin: 5px 0;">R$ ${parseFloat(dbProd.preco).toFixed(2).replace('.', ',')}</p>` : "";
+        const descHTML = dbProd && dbProd.descricao ? `<p style="font-size: 11px; color: #777; margin-bottom: 10px;">${dbProd.descricao}</p>` : "";
+
+        // Substitua o trecho dentro do seu .map pelo código abaixo:
+return `
+    <div class="card-item" style="${esgotado ? 'opacity: 0.7;' : ''}">
+        <div class="selo-status" style="background: ${esgotado ? '#e74c3c' : '#25D366'}">${esgotado ? 'ESGOTADO' : 'DISPONÍVEL'}</div>
+        <div class="img-container"><img src="${p.img}" style="${esgotado ? 'filter: grayscale(1);' : ''}"></div>
+        <p><b>${p.nome}</b></p>
+        
+        ${precoHTML} 
+        ${descHTML} 
+        
+        <div class="compra-acoes">
+            <div class="controle-qtd">
+                <button class="btn-qtd" onclick="altQtd(${index}, -1)" ${esgotado ? 'disabled' : ''}>-</button>
+                <input type="number" id="qtd-${index}" value="1" class="qtd-seletor" readonly>
+                <button class="btn-qtd" onclick="altQtd(${index}, 1)" ${esgotado ? 'disabled' : ''}>+</button>
             </div>
-        `;
+            <button class="btn-add" ${esgotado ? 'disabled style="background:#ccc;"' : ''} onclick="pedir('${p.nome}', ${index})">
+                ${esgotado ? 'Sem Estoque' : 'Pedir'}
+            </button>
+        </div>
+        <button class="btn-info" onclick="window.open('https://wa.me/5511972011983?text=Olá, quero detalhes sobre: ${p.nome}')">WhatsApp</button>
+    </div>
+`;
     }).join('');
     verificarLogin();
 }
