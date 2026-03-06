@@ -2,7 +2,7 @@
 
 Bem-vindo ao repositório da **JM Decoração**, um projeto que tem como objetivo apresentar produtos artesanais de vidro em uma vitrine digital moderna e responsiva.  
 
-🔗 **Acesse o site:** [JM Decoração Artesanal](https://lucashenrique2027.github.io/JmDecoracao/)
+🔗 **Acesse o site:** [JM Decoração Artesanal](https://lucashenrique2027.github.io/TESTE-ONLINE/)
 
 ---
 
